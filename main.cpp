@@ -30,6 +30,7 @@ bool ok(int x,int y)// can a tank steps in?
 int shoot_cnt[2];
 bool valid(int id,int action)//is tank id's action valid?
 {
+    if(action<-1 ||action>7) return false;
 	if(self_position[id*2+1] == (myside) * 8)
 	{
 		if(self_position[id*2] < 4 && action == 5)return false;
@@ -140,6 +141,18 @@ bool stupidB(int id,int action)
         return true;
     }
 }
+int Attack(int id)
+{
+     int x0=self_position[id*2];
+     int y0=self_position[id*2+1];
+     for(int i=0;i<2;i++){
+        if(enemy_position[2*i]==x0 && enemy_position[2*i+1]<y0) return 4;
+        if(enemy_position[2*i]==x0 && enemy_position[2*i+1]>y0) return 6;
+        if(enemy_position[2*i+1]==y0 && enemy_position[2*i]<x0) return 7;
+        if(enemy_position[2*i+1]==y0 && enemy_position[2*i]>x0) return 5;
+     }
+    return -2;
+}
 bool TimeUp(clock_t start)
 {
     clock_t End=clock();
@@ -240,10 +253,17 @@ int main()
 	for(int i=0;i<2;i++)// sample valid action for 2 tanks
 	{
 		int action;
-		do{
+		action = Attack(i);
+
+		/*do{
 			action = rand() % 9 - 1;
 		}while(!valid(i, action) || (!!(action>=4)) + shoot_cnt[i] >= 2
          ||(!TimeUp(start)&&(stupidA(i,action)||stupidB(i,action))));
+         */
+         while(!valid(i, action) || (!!(action>=4)) + shoot_cnt[i] >= 2
+         ||(!TimeUp(start)&&(stupidA(i,action)||stupidB(i,action)))){
+            action = rand() % 9 - 1;
+         }
 		a[i] = action;
 		output.append(action);
 	}
