@@ -10,7 +10,7 @@
 #include <cstring>
 #include "jsoncpp/json.h"
 #define MAX 1000000
-#define Mweight 100
+#define Mweight 50
 #define Dweight 1000
 using std::string;
 using std::cin;
@@ -212,7 +212,7 @@ bool stupidB(int id,int action)
 
 int countValue(int id,int x, int y, int goalX=4,int goalY=8-8*myside)//越小越好
 {
-    int M=std::abs(goalY-y)+std::abs(goalX-x)+(int)(state[y][x] & brick);
+    int M=std::abs(goalY-y)+std::abs(goalX-x)+(int)(state[y][x] & brick)+(int)(state[y][x] & forest);
     int D=(int)(DangerLevel(id,x,y));
     return M*Mweight+D*Dweight;
 }
@@ -263,6 +263,7 @@ namespace Invasion
 {
    Point* InvadeTarget(int id)
    {
+       cout<< enemy_position[0] << " " <<enemy_position[2] <<"\n";
         if(enemy_position[0]!=-1&&enemy_position[2]!=-1){
             Point* goal=new Point(4,8-8*myside);
             return goal;
@@ -311,6 +312,7 @@ namespace Astar
 
     Point* AstarFindWay(int id, int goalX, int goalY)
     {
+       // cout << id <<" "<< self_position[id*2] <<" "<<self_position[id*2+1]<<" "<<goalX<<" "<<goalY<<"\n";
         openList.push_back(new Point(self_position[2*id],self_position[2*id+1]));
         while(!openList.empty())
         {
@@ -318,8 +320,8 @@ namespace Astar
             openList.remove(curPoint); //从开启列表中删除
             closeList.push_back(curPoint); //放到关闭列表
             for(int i=0;i<4;i++){
-               int tx=self_position[2*id]+px[i];
-               int ty=self_position[2*id+1]+py[i];
+               int tx=curPoint->x+px[i];
+               int ty=curPoint->y+py[i];
                if(stupidMove(tx,ty)) continue;
                Point* target=new Point(tx,ty);
                Point* searchAnswer=isInList(openList,target);
@@ -345,10 +347,8 @@ namespace Astar
                         searchAnswer->F=tempG+tempH;
                     }
                 }
-            Point* goal=new Point(goalX,goalY);
-			Point* resPoint=isInList(openList,goal);
-			if(resPoint)
-				return resPoint; //返回列表里的节点指针，不要用原来传入的endpoint指针，因为发生了深拷贝
+			if(std::abs(curPoint->x-goalX)+std::abs(curPoint->y-goalY)<4)
+				return curPoint; //返回列表里的节点指针
 		}
 	}
         return nullptr;
@@ -379,11 +379,16 @@ namespace Astar
         if(next->y==y0+1){
             return 2+(int)(state[next->y][x0] & brick)*4;
         }
+        return Basic::RunAway(id);
     }
 }
 void init()
 {
 	memset(enemy_position,-1,sizeof(enemy_position));
+	/*enemy_position[0]=2;
+	enemy_position[1]=8;
+	enemy_position[2]=6;
+	enemy_position[3]=8;*/
 	state[0][4] = state[8][4] = steel;
 }
 int main()
@@ -453,7 +458,33 @@ int main()
 			}
 		}
 	}
-
+    char MAP[10][10];
+		for(int i=0;i<=9;i++){
+            for(int j=0;j<9;j++){
+                switch(state[i][j]){
+                case 0:
+                    MAP[i][j]='.';
+                    break;
+                case 1:
+                    MAP[i][j]='b';
+                    break;
+                case 2:
+                    MAP[i][j]='s';
+                    break;
+                case 4:
+                    MAP[i][j]='f';
+                    break;
+                case 8:
+                    MAP[i][j]='w';
+                    break;
+                default:
+                    MAP[i][j]='x';
+                }
+            }
+            MAP[i][9]='\0';
+		}
+		for(int i=0;i<=9;i++)
+            cout<<MAP[i]<<"\n";
 
 	input = all["responses"];
 	for(int i=0;i<input.size();i++)//update self state
@@ -485,12 +516,12 @@ int main()
         if(e!=0) action=e;
         else{
             Point* tempP=Invasion::InvadeTarget(i);
+            cout << tempP->x <<" "<< tempP->y<<"\n";
             action=Astar::GetNextAction(i,tempP->x,tempP->y);
         }
 		a[i] = action;
 		output.append(action);
 	}
-	cout << ",,"<<"\n";
     Json::FastWriter writer;
     cout<<writer.write(output);
     return 0;
